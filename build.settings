@@ -1,0 +1,114 @@
+settings =
+{
+    orientation =
+    {
+        default = "portrait",
+        supported = { "portrait" },
+    },
+    android =
+    {
+--     versionCode = "10",
+        usesPermissions =
+        {
+           -- "android.permission.INTERNET",
+			--"android.permission.ACCESS_NETWORK_STATE",
+			--"android.permission.READ_PHONE_STATE",			
+            "android.permission.WRITE_EXTERNAL_STORAGE",
+			--"android.permission.VIBRATE",
+        },
+    },
+	iphone = 
+    {
+        plist = 
+        {
+            CFBundleIconFile = "Icon.png",
+            CFBundleIconFiles =
+            {
+                "Icon.png", 
+                "Icon@2x.png", 
+                "Icon-60.png",
+                "Icon-60@2x.png",
+                "Icon-60@3x.png",
+                "Icon-72.png", 
+                "Icon-72@2x.png",
+                "Icon-76.png",
+                "Icon-76@2x.png", 
+                "Icon-Small-40.png",
+                "Icon-Small-40@2x.png",
+                "Icon-Small-40@3x.png",
+                "Icon-Small-50.png", 
+                "Icon-Small-50@2x.png", 
+                "Icon-Small.png", 
+                "Icon-Small@2x.png",
+                "Icon-Small@3x.png",
+            },
+			UILaunchImages = 
+			{
+                {  -- iPhone 4 Portrait
+                    ["UILaunchImageMinimumOSVersion"] = "6.0",
+                    ["UILaunchImageName"] = "Default",
+                    ["UILaunchImageOrientation"] = "Portrait",
+                    ["UILaunchImageSize"] = "{320, 480}"
+                },
+                {  -- iPhone 5 Portrait
+                    ["UILaunchImageMinimumOSVersion"] = "7.0",
+                    ["UILaunchImageName"] = "Default-568h",
+                    ["UILaunchImageOrientation"] = "Portrait",
+                    ["UILaunchImageSize"] = "{320, 568}"
+                },
+                {  -- iPad Portrait
+                    ["UILaunchImageMinimumOSVersion"] = "6.0",
+                    ["UILaunchImageName"] = "Default-Portrait",
+                    ["UILaunchImageOrientation"] = "Portrait",
+                    ["UILaunchImageSize"] = "{768, 1024}"
+                },
+                {  -- iPhone 6 Portrait
+                    ["UILaunchImageMinimumOSVersion"] = "8.0",
+                    ["UILaunchImageName"] = "Default-667h",
+                    ["UILaunchImageOrientation"] = "Portrait",
+                    ["UILaunchImageSize"] = "{375, 667}"
+                },
+                {  -- iPhone 6 Plus Portrait
+                    ["UILaunchImageMinimumOSVersion"] = "8.0",
+                    ["UILaunchImageName"] = "Default-736h",
+                    ["UILaunchImageOrientation"] = "Portrait",
+                    ["UILaunchImageSize"] = "{414, 736}"
+                },
+            },
+            UIApplicationExitsOnSuspend = false,
+			UIPrerenderedIcon = true,
+            UIStatusBarHidden = true,
+			MinimumOSVersion = "6.0",
+        }
+    },
+    plugins =
+    {
+        -- key is the name passed to Lua's 'require()'
+        ["plugin.google.play.services"] =
+        {
+            publisherId = "com.coronalabs"
+        },		
+    }, 
+	excludeFiles = 
+	{
+		all = 
+		{ 
+			"editscreen.lua", 
+			"icon1024.*",
+			"iconHiRes.png",
+			"todo.txt",
+			"*.session",
+			".git*",
+		},
+		iphone = { "Icon-*dpi.png", },
+		android = 
+		{ 
+			"Icon.png", 
+			"*@2x.png", 
+			"*@3x.png", 
+			"Default-5*.png",
+			"Default-6*.png",
+			"Default-7*.png",			
+		},
+	},
+}
