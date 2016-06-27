@@ -139,25 +139,24 @@ function scene:show( event )
 				end
 			end
 			
-			if sessionID == 0 then
-				for x in udb:urows "SELECT COUNT(*) FROM Sessions;" do 
-					sessionID = x
-				end			
-			end
-			if sessionID > 0 then
+			local lastSessionID
+			for x in udb:urows "SELECT COUNT(*) FROM Sessions;" do 
+				lastSessionID = x
+			end			
+			if lastSessionID > 0 then
 				local sessionLen, h,m,s
-				for x in udb:rows([[SELECT * FROM Sessions WHERE id=]] .. sessionID .. [[ ;]]) do 
+				for x in udb:rows([[SELECT * FROM Sessions WHERE id=]] .. lastSessionID .. [[ ;]]) do 
 					sessionLen = x[6]
 					if sessionLen == nil then sessionLen = 30 end
 					local length = sessionLen
 					h = length/3600 - (length/3600)%1
 					length = length - h*3600
 					m = length/60 - (length/60)%1
-					s = length - m
+					s = length - m*60
 				end
 				lTimeV.text = h .. ':' .. m .. ':' .. s
 				--print( 'Last Session Time: ' .. h .. '-Hours, ' .. m .. '-Minutes, ' .. s .. '-Seconds' )
-				for x in udb:urows([[SELECT COUNT(*) FROM Attempts WHERE sessionid=]] .. sessionID .. [[ ;]]) do 
+				for x in udb:urows([[SELECT COUNT(*) FROM Attempts WHERE sessionid=]] .. lastSessionID .. [[ ;]]) do 
 					numAttempts = x
 				end
 				lastStatInfoValues[1].text =  tostring( numAttempts )
@@ -168,7 +167,7 @@ function scene:show( event )
 					
 					for i=2,#theme do
 						local value
-						for x in udb:urows( "SELECT COUNT(*) FROM Attempts WHERE sessionid=" .. sessionID .. " AND result='" ..theme[i].id.."';" ) do 
+						for x in udb:urows( "SELECT COUNT(*) FROM Attempts WHERE sessionid=" .. lastSessionID .. " AND result='" ..theme[i].id.."';" ) do 
 							value = x
 						end
 						lastStatInfoValues[i].text =  tostring( value ) .. ' ( ' .. WholePercent( value/numAttempts ) .. '% )'
