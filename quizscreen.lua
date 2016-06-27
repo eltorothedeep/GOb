@@ -1,5 +1,6 @@
 local scene = composer.newScene()
 
+-- Scene Controls
 local header
 local qText
 local aText
@@ -9,6 +10,9 @@ local rightButton
 local endButton
 local answerButton
 
+-- Data
+local qNum = 0
+local sessionQIDs = {}
 
 local function GoToWelcome( event )
 	EndSession( true, false )
@@ -24,8 +28,100 @@ local function GoToWelcome( event )
 	composer.gotoScene( "welcomescreen", options )
 end
 
+-- DB operations
+function AddCondition( varList, fieldList )
+	local sqlcmd = ""
+	local first = true
+	for w in string.gmatch( varList, "|([%a.]+)") do
+		for i = 1, #fieldList do
+			if first then
+				first = false
+			else
+				sqlcmd = sqlcmd .. ' OR'
+			end		
+			sqlcmd = sqlcmd .. ' ' .. fieldList[i] ..'  = "'..w..'"'
+		end
+	end
+	return sqlcmd
+end
+
+function GetSessionQuestions()
+	-- Clear the data
+	qNum = 0
+	sessionQIDs = {}
+	
+	local sqlcmd = 'select * from Questions'
+	local firstCondition = true
+	local varList = composer.getVariable( "typeList" )
+	if  varList ~= "" then
+		if firstCondition then
+			firstCondition = false
+			sqlcmd = sqlcmd .. ' WHERE'
+		else
+			sqlcmd = sqlcmd .. ' AND'
+		end
+		sqlcmd = sqlcmd .. ' ( ' .. AddCondition( varList, {'Type1', 'Type2'} ) .. ' )'
+	end
+	varList = composer.getVariable( "continentList" )
+	if  varList ~= "" then
+		if firstCondition then
+			firstCondition = false
+			sqlcmd = sqlcmd .. ' WHERE'
+		else
+			sqlcmd = sqlcmd .. ' AND'
+		end
+		sqlcmd = sqlcmd ..  ' ( ' .. AddCondition( varList, {'Continent'} ) .. ' )'
+	end
+	varList = composer.getVariable( "countryList" )
+	if  varList ~= "" then
+		if firstCondition then
+			firstCondition = false
+			sqlcmd = sqlcmd .. ' WHERE'
+		else
+			sqlcmd = sqlcmd .. ' AND'
+		end
+		sqlcmd = sqlcmd ..  ' ( ' .. AddCondition( varList, {'Country'} ) .. ' )'
+	end
+	sqlcmd = sqlcmd .. ' ORDER BY RANDOM()'
+	sqlcmd = sqlcmd .. ' LIMIT ' .. tostring( composer.getVariable( "numQs" ) )
+	print( sqlcmd )
+	local dbInfo = GetQuizDBInfo( sqlcmd, 'QID' )
+	for i= 1, #dbInfo do
+		sessionQIDs[#sessionQIDs+1] = dbInfo[i]
+	end
+	PrintTable( sessionQIDs, 1, 2 )
+
+--SELECT * FROM DBOne.dbo.Table1 AS t1 INNER JOIN DBTwo.dbo.Table2 t2 ON t2.ID = t1.ID
+--SELECT Questions.qid FROM Questions JOIN Attempts ON Questions.QID = Attempts.qid WHERE Attempts.result = "MISSED" OR Attempts.result = "GUESSED"
+end
+
+function GetNextQuestion( lastResult )
+	-- Write info about the attempt
+	if lastResult then
+		local newAttempt=[[INSERT INTO Attempts VALUES (NULL, ']]..userID..[[',']]..sessionID..[[',']].. sessionQIDs[qNum]..[[',']]..lastResult..[['); ]]
+		udb:exec( newAttempt )
+	end
+	-- Get next question of exit if session ended
+	qNum = qNum + 1
+	if qNum <= #sessionQIDs then
+		local sqlcmd = 'select * from Questions where QID = "' .. tostring( sessionQIDs[qNum] ) .. '"'
+		--print( sqlcmd )
+		db:exec(sqlcmd,saveRow,'test_udata')
+		for i=1,rowCols do 
+			if keys[i] == 'Question' then
+				qText.text = tostring(  sessionQIDs[qNum] ).. '. ' .. data[i]
+				break
+			end
+		end
+		aText.text = '...'
+	else
+		GoToWelcome( nil )
+	end
+	--IncAndWriteIndex()
+end
+
+-- UI Responders
 local function nextQuestion( event )
-	GetNextQuestion( event.target.id )
 	answerButton.alpha = 1.0
 	answerButton:setEnabled( true )
 	wrongButton.alpha = 0
@@ -34,6 +130,7 @@ local function nextQuestion( event )
 	guessedButton:setEnabled( false )
 	rightButton.alpha = 0
 	rightButton:setEnabled( false )
+	GetNextQuestion( event.target.id )
 end
 
 local function showAnswer()
@@ -53,31 +150,7 @@ local function showAnswer()
 	rightButton:setEnabled( true )
 end
 
-function GetNextQuestion( lastResult )
-	local sqlcmd = 'select * from Questions where QID = "' .. tostring( index ) .. '"'
-	--print( sqlcmd )
-	db:exec(sqlcmd,saveRow,'test_udata')
-	for i=1,rowCols do 
-		if keys[i] == 'Question' then
-			qText.text = tostring( index ).. '. ' .. data[i]
-			break
-		end
-	end
-	aText.text = '...'
-	
-	if lastResult then
-		local newAttempt=[[INSERT INTO Attempts VALUES (NULL, ']]..userID..[[',']]..sessionID..[[',']]..index..[[',']]..lastResult..[['); ]]
-		udb:exec( newAttempt )
-	end
-	
-	index = index + 1
-
-	local filePath = system.pathForFile( 'lastIndex.txt', system.DocumentsDirectory )
-	file = io.open( filePath, "w" )
-	file:write( tostring( index ) )
-	io.close( file ) 
-end
-
+-- Composer API
 function scene:create( event )
     local sceneGroup = self.view
 	
@@ -224,6 +297,7 @@ function scene:show( event )
 		sessionID = udb:last_insert_rowid()
 		--print( sessionID )
 
+		GetSessionQuestions()
 		GetNextQuestion( nil )
     elseif ( phase == "did" ) then
     end

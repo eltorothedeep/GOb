@@ -73,7 +73,8 @@ function scene:create( event )
 	local radioGroup = display.newGroup()	
 	sceneGroup:insert( radioGroup )
 	
-	local dbInfo = GetQuizDBInfo( 'Types', 'Type' );
+	local sqlcmd = 'select * from Types'
+	local dbInfo = GetQuizDBInfo( sqlcmd, 'Type' );
 	for i= 1, #dbInfo do
 		local entry = { dbInfo[i], "checkbox", 100, compVarName }
 		tOpts[#tOpts+1] = entry

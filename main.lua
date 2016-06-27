@@ -110,6 +110,59 @@ sessionID = 0
 userID = 0
 startTime = 0
 
+function SetupUserDB()
+	-- Open the user data database
+	local path = system.pathForFile("userdata.db", system.DocumentsDirectory)
+	udb = sqlite3.open( path )
+	
+	-- Setup the user data database
+	local tablesetup = [[CREATE TABLE IF NOT EXISTS Users (id INTEGER PRIMARY KEY, username TEXT);]]
+	--print(tablesetup)
+	udb:exec( tablesetup )
+	tablesetup = [[CREATE TABLE IF NOT EXISTS Sessions(id INTEGER PRIMARY KEY, userid INTEGER, date TEXT, starttime TEXT, endtime TEXT, length INTEGER);]]
+	--print(tablesetup)
+	udb:exec( tablesetup )
+	tablesetup = [[CREATE TABLE IF NOT EXISTS Attempts (id INTEGER PRIMARY KEY, userid INTEGER, sessionid INTEGER, qid INTEGER, result TEXT);]]
+	--print(tablesetup)
+	udb:exec( tablesetup )
+
+	for row in udb:nrows("SELECT * FROM Users WHERE username='Durga';") do
+		userID = row.id
+		--print( sessionID )
+	end
+	if userID == 0 then
+		local tablefill =[[INSERT INTO Users VALUES (NULL, 'Durga'); ]]
+		udb:exec( tablefill )
+	end
+	for row in udb:nrows("SELECT * FROM Users WHERE username='Durga';") do
+		userID = row.id
+		--print( sessionID )
+	end
+end
+
+function GetLastIndex()
+	local filePath = system.pathForFile( 'lastIndex.txt', system.DocumentsDirectory )
+	if filePath then
+		file = io.open( filePath, "r" )
+		if file then
+			for line in file:lines() do
+				index = tonumber( line )
+				break
+			end
+			io.close( file )
+		end
+	end
+end
+
+function IncAndWriteIndex()
+	index = index + 1
+
+	local filePath = system.pathForFile( 'lastIndex.txt', system.DocumentsDirectory )
+	file = io.open( filePath, "w" )
+	file:write( tostring( index ) )
+	io.close( file ) 
+end
+
 function OpenDatabases( fullOpen )
 	-- Open the user data database
 	local path = system.pathForFile("userdata.db", system.DocumentsDirectory)
@@ -119,42 +172,6 @@ function OpenDatabases( fullOpen )
 		-- open the questions database
 		local rfilePath = system.pathForFile( "GeoBeeQ.db", system.ResourceDirectory )		
 		db = sqlite3.open( rfilePath )   
-		
-		-- Setup the user data database
-		local tablesetup = [[CREATE TABLE IF NOT EXISTS Users (id INTEGER PRIMARY KEY, username TEXT);]]
-		--print(tablesetup)
-		udb:exec( tablesetup )
-		tablesetup = [[CREATE TABLE IF NOT EXISTS Sessions(id INTEGER PRIMARY KEY, userid INTEGER, date TEXT, starttime TEXT, endtime TEXT, length INTEGER);]]
-		--print(tablesetup)
-		udb:exec( tablesetup )
-		tablesetup = [[CREATE TABLE IF NOT EXISTS Attempts (id INTEGER PRIMARY KEY, userid INTEGER, sessionid INTEGER, qid INTEGER, result TEXT);]]
-		--print(tablesetup)
-		udb:exec( tablesetup )
-
-		for row in udb:nrows("SELECT * FROM Users WHERE username='Durga';") do
-			userID = row.id
-			--print( sessionID )
-		end
-		if userID == 0 then
-			local tablefill =[[INSERT INTO Users VALUES (NULL, 'Durga'); ]]
-			udb:exec( tablefill )
-		end
-		for row in udb:nrows("SELECT * FROM Users WHERE username='Durga';") do
-			userID = row.id
-			--print( sessionID )
-		end
-		
-		local filePath = system.pathForFile( 'lastIndex.txt', system.DocumentsDirectory )
-		if filePath then
-			file = io.open( filePath, "r" )
-			if file then
-				for line in file:lines() do
-					index = tonumber( line )
-					break
-				end
-				io.close( file )
-			end
-		end
 	end
 end
 
@@ -189,9 +206,8 @@ function saveRow(udata,cols,values,names)
 	return 0
 end
 
-function GetQuizDBInfo( tablename, colname )
+function GetQuizDBInfo( sqlcmd, colname )
 	tempData = {}
-	local sqlcmd = 'select * from ' .. tablename
 	db:exec(sqlcmd,saveRow,'fetch_col|'..colname)
 	dbInfo = {}
 	for i=1,#tempData do
@@ -264,7 +280,10 @@ local function onSendEmail( event )
 end
 
 
+SetupUserDB()
+GetLastIndex()
 OpenDatabases( true )
+
 local options = 
 {
 	effect = "fade",
