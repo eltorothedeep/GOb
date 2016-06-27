@@ -1,3 +1,26 @@
+composer = require( "composer" )
+
+composer.setVariable( "numQs", 25 )
+
+composer.setVariable( "askAny", true )
+composer.setVariable( "askSel", false )
+composer.setVariable( "askNew", true )
+composer.setVariable( "askGuessed", false )
+composer.setVariable( "askMissed", false )
+
+composer.setVariable( "typeAny", true )
+composer.setVariable( "typeSel", false )
+composer.setVariable( "typeList", "" )
+
+composer.setVariable( "continentAny", true )
+composer.setVariable( "continentSel", false )
+composer.setVariable( "continentList", "" )
+
+composer.setVariable( "countryAny", true )
+composer.setVariable( "countrySel", false )
+composer.setVariable( "countryList", "" )
+
+
 centerX = display.contentCenterX
 centerY = display.contentCenterY
 _W = display.contentWidth
@@ -6,16 +29,40 @@ space = 9
 buttonHeight = 40
 buttonWidth = _W/3.5
 bannerEnd = 53
-appState = "startup"
 
 appOriginY = display.screenOriginY + bannerEnd
+appCanvasHeight = _H - appOriginY
+
 display.setStatusBar( display.HiddenStatusBar ) 
+
+function AddText( group, headerText, fontSize, fillColorR, fillColorG, fillColorB, fillColorA, x, y, space )
+	local label1 = display.newText( group, headerText, x, y, native.systemFontBold, fontSize )
+	label1:setFillColor( fillColorR, fillColorG, fillColorB, fillColorA )
+	group:insert( label1 )
+	return label1, y + label1.height + space
+end
+
+function AddBackground( options )
+	local bkgnd = display.newRect( options.x, options.y, options.w, options.h, options.fontSize )
+	if options.fill ~= nil then
+		bkgnd:setFillColor( options.fill )
+	end
+	if options.anchorX then
+		bkgnd.anchorX = options.anchorX
+	end
+	if options.anchorY then
+		bkgnd.anchorY = options.anchorY
+	end
+	if options.parent then
+		options.parent:insert( bkgnd )
+	end
+end
 
 --Include sqlite
 require "sqlite3"
 widget = require( "widget" )
 
-local function PrintTable( t, l, max )
+function PrintTable( t, l, max )
 	for k,v in pairs( t ) do
 		if l < max then
 			if type( v ) == 'table' then
@@ -32,6 +79,8 @@ end
 rowCols = 0
 keys = {}
 data = {}
+tempData = {}
+
 question=false
 index = 1800
 
@@ -57,11 +106,6 @@ theme =
 
 db = nil
 udb = nil
-
-local graphScreen = require( 'graphs' )
-local welcomeScreen = require( 'welcome' )
-local quizScreen = require( 'quiz' )
-
 sessionID = 0
 userID = 0
 startTime = 0
@@ -126,7 +170,6 @@ end
 --display.setDefault( "anchorY", 0.0 )
 
 function saveRow(udata,cols,values,names)
-	--print( udata, cols )
 	if udata=='test_udata' then
 		keys = {}
 		data = {}
@@ -135,34 +178,26 @@ function saveRow(udata,cols,values,names)
 			keys[i] = names[i]
 			data[i] = values[i]
 		end
---	elseif udata=='countattempts' then
+	elseif udata:find( 'fetch_col' ) then
+		local colName = udata:gsub( 'fetch_col|', '' )
+		for i=1,cols do 
+			if names[i] == colName then
+				tempData[#tempData+1] = values[i]	
+			end
+		end
 	end
 	return 0
 end
 
-function GetNextQuestion( lastResult )
-	local sqlcmd = 'select * from Questions where QID = "' .. tostring( index ) .. '"'
-	--print( sqlcmd )
-	db:exec(sqlcmd,saveRow,'test_udata')
-	for i=1,rowCols do 
-		if keys[i] == 'Question' then
-			quizScreen.question.text = tostring( index ).. '. ' .. data[i]
-			break
-		end
+function GetQuizDBInfo( tablename, colname )
+	tempData = {}
+	local sqlcmd = 'select * from ' .. tablename
+	db:exec(sqlcmd,saveRow,'fetch_col|'..colname)
+	dbInfo = {}
+	for i=1,#tempData do
+		dbInfo[i] = tempData[i]
 	end
-	quizScreen.answer.text = '...'
-	
-	if lastResult then
-		local newAttempt=[[INSERT INTO Attempts VALUES (NULL, ']]..userID..[[',']]..sessionID..[[',']]..index..[[',']]..lastResult..[['); ]]
-		udb:exec( newAttempt )
-	end
-	
-	index = index + 1
-
-	local filePath = system.pathForFile( 'lastIndex.txt', system.DocumentsDirectory )
-	file = io.open( filePath, "w" )
-	file:write( tostring( index ) )
-	io.close( file ) 
+	return dbInfo
 end
 
 function WholePercent( fraction )
@@ -174,42 +209,33 @@ local function DeltaTime( start, endtime )
 	eh, em, es = endtime:match( '(%d):(%d):(%d)' )
 end
 
-function EndSession( doDBops )
+function EndSession( doDBops, closeUDB )
 	if doDBops == nil then doDBops = true end
+	if closeUDB == nil then closeUDB = false end
 	
-		local timeToTransition = 0
-		if doDBops then
-			local date = os.date( "*t" )
-			local q = [[UPDATE Sessions SET endtime=']]..os.date( "%H:%M:%S" )..[[' WHERE id=']]..sessionID..[[';]]
-			udb:exec( q )
-			q = [[UPDATE Sessions SET length=']]..os.time()-startTime..[[' WHERE id=']]..sessionID..[[';]]
-			udb:exec( q )			
-			timeToTransition = 400
-		end
-		welcomeScreen.TransitionIn( timeToTransition, true )
-		if doDBops then
-			udb:close()
-		end
-		sessionID = 0
-		
-		quizScreen.TransitionOut( timeToTransition )
+	if doDBops then
+		local date = os.date( "*t" )
+		local q = [[UPDATE Sessions SET endtime=']]..os.date( "%H:%M:%S" )..[[' WHERE id=']]..sessionID..[[';]]
+		udb:exec( q )
+		q = [[UPDATE Sessions SET length=']]..os.time()-startTime..[[' WHERE id=']]..sessionID..[[';]]
+		udb:exec( q )			
+	end
+	
+	if closeUDB then
+		udb:close()
+	end
+	
+	sessionID = 0
 end
 
 function StartSession()
 	welcomeScreen.TransitionOut( 400 )
-	quizScreen.TransitionIn( 400 )
-
-	OpenDatabases( false )
-
-	local date = os.date( "*t" )    -- returns table of date & time values
-	startTime = os.time()
-	local newSession=[[INSERT INTO Sessions VALUES (NULL, ']]..userID..[[',']]..os.date( "%m/%d/%Y" )..[[',']]..os.date( "%H:%M:%S" )..[[', NULL, NULL); ]]
-	--print( newSession )
-	udb:exec( newSession )
-	sessionID = udb:last_insert_rowid()
-	--print( sessionID )
-
-	GetNextQuestion( nil )
+	local options = 
+	{
+		effect = "fade",
+		time = 400,
+	}	
+	composer.gotoScene( "quizoptions", options )
 end
 
 local function onSendEmail( event )
@@ -239,7 +265,16 @@ end
 
 
 OpenDatabases( true )
-EndSession( false )
+local options = 
+{
+	effect = "fade",
+	time = 400,
+	params = 
+	{
+		updateInfo = true,
+	}
+}
+composer.gotoScene( "welcomescreen", options )
 
 --Handle the applicationExit event to close the db
 local function onSystemEvent( event )
@@ -284,16 +319,9 @@ local function onKeyEvent( event )
 
 	if ( "back" == keyName and phase == "up" ) then
 		if sessionID ~= 0 then
-			EndSession(true)
+			EndSession(true, true)
 			return true
 		end
-	end
-end
-
-local function appState(event)
-	if appstate == 'startup' then
-	elseif appstate == 'welcome' then
-	elseif appstate == 'quiz' then
 	end
 end
 
@@ -301,4 +329,3 @@ end
 Runtime:addEventListener( "system", onSystemEvent )
 Runtime:addEventListener( "orientation", onOrientationChange )
 Runtime:addEventListener( "key", onKeyEvent )
-Runtime:addEventListener( "enterFrame", appState );

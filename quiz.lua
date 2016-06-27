@@ -1,6 +1,10 @@
 local quizUI = {}
 quizUI.screen = display.newGroup()
 
+quizzing = display.newGroup()
+
+quizUI.screen:insert( quizzing )
+
 local label2 = display.newText( quizUI.screen, "Geo Quiz", _W/2.0, appOriginY, native.systemFontBold, 24 )
 label2:setFillColor( 190/255, 190/255, 1, 1 )
 
@@ -159,16 +163,35 @@ rightButton:setEnabled( false )
 rightButton.x = display.contentWidth * 0.83
 rightButton.y = display.contentHeight - buttonHeight * 1.5
 
-quizUI.screen:insert( answerButton )
-quizUI.screen:insert( rightButton )
-quizUI.screen:insert( wrongButton )
-quizUI.screen:insert( guessedButton )
-quizUI.screen:insert( endButton )
-quizUI.screen:insert( quizUI.question )
-quizUI.screen:insert( quizUI.answer )
+quizzing:insert( answerButton )
+quizzing:insert( rightButton )
+quizzing:insert( wrongButton )
+quizzing:insert( guessedButton )
+quizzing:insert( endButton )
+quizzing:insert( quizUI.question )
+quizzing:insert( quizUI.answer )
+
+local function StartQuizzing( event )
+	OpenDatabases( false )
+
+	local date = os.date( "*t" )    -- returns table of date & time values
+	startTime = os.time()
+	local newSession=[[INSERT INTO Sessions VALUES (NULL, ']]..userID..[[',']]..os.date( "%m/%d/%Y" )..[[',']]..os.date( "%H:%M:%S" )..[[', NULL, NULL); ]]
+	--print( newSession )
+	udb:exec( newSession )
+	sessionID = udb:last_insert_rowid()
+	--print( sessionID )
+
+	GetNextQuestion( nil )
+
+	transition.to( quizzing, { alpha=1, time = 400, transition = easing.inQuad } )
+
+end
+
+
+
 
 quizUI.TransitionIn = function(timeToTransition)
-	print( "To Quiz Screen" )
 	transition.to( quizUI.screen, { alpha=1, time = timeToTransition, transition = easing.inQuad } )
 end
 
