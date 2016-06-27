@@ -86,14 +86,16 @@ settings =
         -- key is the name passed to Lua's 'require()'
         ["plugin.google.play.services"] =
         {
-            publisherId = "com.coronalabs"
+            publisherId = "com.coronalabs",
+			supportedPlatforms = { iphone=true, android=true }
         },		
     }, 
 	excludeFiles = 
 	{
 		all = 
 		{ 
-			"editscreen.lua", 
+			"welcome.lua", 
+			"composertemplate.lua",
 			"icon1024.*",
 			"iconHiRes.png",
 			"todo.txt",
