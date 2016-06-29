@@ -4,9 +4,7 @@ composer.setVariable( "numQs", 25 )
 
 composer.setVariable( "askAny", true )
 composer.setVariable( "askSel", false )
-composer.setVariable( "askNew", true )
-composer.setVariable( "askGuessed", false )
-composer.setVariable( "askMissed", false )
+composer.setVariable( "askList", "" )
 
 composer.setVariable( "typeAny", true )
 composer.setVariable( "typeSel", false )

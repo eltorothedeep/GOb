@@ -6,6 +6,8 @@ local optText
 local doneButton
 
 local canvasTop
+local compVarName = "askList"
+
 
 local qOpts = 
 {
@@ -13,9 +15,9 @@ local qOpts =
 
 	{ "ANY", "radio", 50, "askAny" },
 	{ "Select Types", "radio", 50, "askSel"  },
-	{ "New Questions", "checkbox", 100, "askNew" },
-	{ "Guessed Questions", "checkbox", 100, "askGuessed" },
-	{ "Missed Questions", "checkbox", 100, "askMissed" },
+	{ "NEW", "checkbox", 100, "askList" },
+	{ "GUESSED", "checkbox", 100, "askList" },
+	{ "MISSED", "checkbox", 100, "askList" },
 }
 
 local function QOptionsDone( event )
@@ -25,9 +27,6 @@ end
 local function onSwitchPress( event )
 	for i=1, #switchButtons do
 		if event.target == switchButtons[i].button then		
-			-- set new values
-			composer.setVariable( qOpts[i][4], switchButtons[i].button.isOn )
-			
 			-- Turn off/on check boxes based on radio buttons
 			if qOpts[i][2] == "radio" then
 				local alpha = 1
@@ -38,8 +37,6 @@ local function onSwitchPress( event )
 					if qOpts[j][2] ~= "radio" then
 						switchButtons[j].button.alpha = alpha
 						switchButtons[j].text.alpha = alpha + 0.5
-					else
-						composer.setVariable( qOpts[j][4], switchButtons[j].button.isOn )
 					end
 				end
 			end
@@ -89,7 +86,11 @@ function scene:create( event )
 	-- Button Specific Options
 		switchOptions.id = qOpts[i][1]
 		switchOptions.style = qOpts[i][2]
-		switchOptions.initialSwitchState = composer.getVariable( qOpts[i][4] )
+		if switchOptions.style == "radio" then
+			switchOptions.initialSwitchState = composer.getVariable( qOpts[i][4] )
+		else
+			switchOptions.initialSwitchState = composer.getVariable( compVarName ):find( switchOptions.id ) ~= nil
+		end
 		switchOptions.left = qOpts[i][3]
 		switchOptions.top = canvasTop + ( switchOptions.height * i * 2 ) - ( switchOptions.height / 2 )		
 		-- Create and Add
@@ -136,11 +137,12 @@ function scene:show( event )
 			if qOpts[i][2] == "radio" then
 				switchButtons[i].button.alpha = 1
 				switchButtons[i].text.alpha = 1
+				switchButtons[i].button.isOn = composer.getVariable( qOpts[i][4] )
 			else
 				switchButtons[i].button.alpha = checkBoxAlpha
 				switchButtons[i].text.alpha = checkBoxAlpha + 0.5
+				switchButtons[i].button.isOn = composer.getVariable( compVarName ):find( switchButtons[i].button.id ) ~= nil
 			end
-			switchButtons[i].button.isOn = composer.getVariable( qOpts[i][4] )
 		end
     elseif ( phase == "did" ) then
     end
@@ -151,7 +153,18 @@ function scene:hide( event )
     local phase = event.phase
     
     if ( phase == "will" ) then
-    elseif ( phase == "did" ) then
+		local typeList = ""
+ 	   	for i=1,#qOpts do
+			if qOpts[i][2] == "radio" then
+				composer.setVariable( qOpts[i][4], switchButtons[i].button.isOn )
+			else
+				if switchButtons[i].button.isOn then
+					typeList = typeList .. '|' .. switchButtons[i].button.id
+				end
+			end
+		end
+		composer.setVariable( compVarName, typeList )
+   elseif ( phase == "did" ) then
     end
 end
 
