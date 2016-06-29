@@ -14,6 +14,12 @@ local lastStatInfoLabels = {}
 local lastStatInfoValues = {}
 local startButton = nil
 
+-- Local Variables
+local displayFontSize = 16
+if system.getInfo( "platformName" ) == "Win" then
+	displayFontSize = 12
+end
+
 local function GoToQuizOptions( event )
 	local options = 
 	{
@@ -31,7 +37,7 @@ function scene:create( event )
 	local nextTop 
 	header, nextTop = AddText( sceneGroup, "Geo Quiz", 24, 190/255, 190/255, 1, 1, _W/2.0, appOriginY, 0 );
 
-	cumStats = display.newText( sceneGroup, "Cumulative Stats:", space, nextTop, native.systemFontBold, 16 )
+	cumStats = display.newText( sceneGroup, "Cumulative Stats:", space, nextTop, native.systemFontBold, displayFontSize )
 	cumStats.anchorX = 0
 	cumStats.anchorY = 0
 	nextTop = nextTop + cumStats.height
@@ -39,12 +45,12 @@ function scene:create( event )
 
 	nextTop = nextTop + space
 	for i=1,#theme do
-		cumStatInfoLabels[i] = display.newText( sceneGroup, theme[i].id..": ", space, nextTop, native.systemFontBold, 16 )
+		cumStatInfoLabels[i] = display.newText( sceneGroup, theme[i].id..": ", space, nextTop, native.systemFontBold, displayFontSize )
 		cumStatInfoLabels[i].anchorX = 0
 		cumStatInfoLabels[i].anchorY = 0
 		cumStatInfoLabels[i]:setFillColor( theme[i].Color[1], theme[i].Color[2], theme[i].Color[3], theme[i].Color[4] )
 
-		cumStatInfoValues[i] = display.newText( sceneGroup, "", _W/2, nextTop, native.systemFontBold, 16 )
+		cumStatInfoValues[i] = display.newText( sceneGroup, "", _W/2, nextTop, native.systemFontBold, displayFontSize )
 		cumStatInfoValues[i].anchorX = 0
 		cumStatInfoValues[i].anchorY = 0
 		cumStatInfoValues[i]:setFillColor( theme[i].Color[1], theme[i].Color[2], theme[i].Color[3], theme[i].Color[4] )
@@ -53,15 +59,15 @@ function scene:create( event )
 	end
 
 	nextTop = nextTop + space
-	lastStats = display.newText( sceneGroup, "Last Session Stats:", space, nextTop, native.systemFontBold, 16 )
+	lastStats = display.newText( sceneGroup, "Last Session Stats:", space, nextTop, native.systemFontBold, displayFontSize )
 	lastStats.anchorX = 0
 	lastStats.anchorY = 0
 	nextTop = nextTop + lastStats.height
 	display.newLine( sceneGroup, space, nextTop, lastStats.width*1.1, nextTop )
 
 	nextTop = nextTop + space
-	lTimeL = display.newText( sceneGroup, "Total Time: ", space, nextTop, native.systemFontBold, 16 )
-	lTimeV = display.newText( sceneGroup, "", _W/2, nextTop, native.systemFontBold, 16 )
+	lTimeL = display.newText( sceneGroup, "Total Time: ", space, nextTop, native.systemFontBold, displayFontSize )
+	lTimeV = display.newText( sceneGroup, "", _W/2, nextTop, native.systemFontBold, displayFontSize )
 	lTimeL.anchorX = 0
 	lTimeL.anchorY = 0
 	lTimeV.anchorX = 0
@@ -70,8 +76,8 @@ function scene:create( event )
 	lTimeV:setFillColor( theme[1].Color[1], theme[1].Color[2], theme[1].Color[3], theme[1].Color[4])
 
 	nextTop = nextTop + lTimeV.height + space
-	lSpeedL = display.newText( sceneGroup, "Time/Question: ", space, nextTop, native.systemFontBold, 16 )
-	lSpeedV = display.newText( sceneGroup, "", _W/2, nextTop, native.systemFontBold, 16 )
+	lSpeedL = display.newText( sceneGroup, "Time/Question: ", space, nextTop, native.systemFontBold, displayFontSize )
+	lSpeedV = display.newText( sceneGroup, "", _W/2, nextTop, native.systemFontBold, displayFontSize )
 	lSpeedL.anchorX = 0
 	lSpeedL.anchorY = 0
 	lSpeedV.anchorX = 0
@@ -81,12 +87,12 @@ function scene:create( event )
 
 	nextTop = nextTop + lSpeedL.height + space
 	for i=1,#theme do
-		lastStatInfoLabels[i] = display.newText( sceneGroup, theme[i].id..": ", space, nextTop, native.systemFontBold, 16 )
+		lastStatInfoLabels[i] = display.newText( sceneGroup, theme[i].id..": ", space, nextTop, native.systemFontBold, displayFontSize )
 		lastStatInfoLabels[i].anchorX = 0
 		lastStatInfoLabels[i].anchorY = 0
 		lastStatInfoLabels[i]:setFillColor( theme[i].Color[1], theme[i].Color[2], theme[i].Color[3], theme[i].Color[4] )
 
-		lastStatInfoValues[i] = display.newText( sceneGroup, "", _W/2, nextTop, native.systemFontBold, 16 )
+		lastStatInfoValues[i] = display.newText( sceneGroup, "", _W/2, nextTop, native.systemFontBold, displayFontSize )
 		lastStatInfoValues[i].anchorX = 0
 		lastStatInfoValues[i].anchorY = 0
 		lastStatInfoValues[i]:setFillColor( theme[i].Color[1], theme[i].Color[2], theme[i].Color[3], theme[i].Color[4] )
