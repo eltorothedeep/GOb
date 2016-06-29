@@ -322,11 +322,10 @@ end
 local function onOrientationChange( event )
 	if sessionID == 0 then
 		if string.find( event.type, 'landscape' ) then
-			welcomeScreen.TransitionOut( timeToTransition )
-			graphScreen.TransitionIn()
+			composer.gotoScene( "graphsscreen", options )
 		else
-			graphScreen.TransitionOut()
-			welcomeScreen.TransitionIn( timeToTransition, false )
+			options.params.updateInfo = false
+			composer.gotoScene( "welcomescreen", options )
 		end
 	end
 end

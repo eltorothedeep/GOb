@@ -122,8 +122,8 @@ function scene:show( event )
     local phase = event.phase
     
     if ( phase == "will" ) then
-		
 		if event.params and event.params.updateInfo and event.params.updateInfo == true then
+			OpenDatabases( false )
 			for x in udb:urows "SELECT COUNT(*) FROM Attempts;" do 
 				numAttempts = x
 			end
