@@ -13,8 +13,11 @@ local answerButton
 -- Data
 local qNum = 0
 local sessionQIDs = {}
+local timeLeft = 15
+local timerhandle = nil
 
 local function GoToWelcome( event )
+	timer.cancel ( timerHandle )
 	EndSession( true, false )
 	local options = 
 	{
@@ -32,14 +35,18 @@ end
 function AddCondition( varList, fieldList )
 	local sqlcmd = ""
 	local first = true
-	for w in string.gmatch( varList, "|([%a.]+)") do
+	for w in string.gmatch( varList, '|([%a.]+)') do
 		for i = 1, #fieldList do
 			if first then
 				first = false
 			else
 				sqlcmd = sqlcmd .. ' OR'
 			end		
-			sqlcmd = sqlcmd .. ' ' .. fieldList[i] ..'  = "'..w..'"'
+			if w == 'NULL' then
+				sqlcmd = sqlcmd .. ' ' .. fieldList[i] ..' IS NULL'
+			else
+				sqlcmd = sqlcmd .. ' ' .. fieldList[i] ..'  = "'..w..'"'
+			end
 		end
 	end
 	return sqlcmd
@@ -50,9 +57,37 @@ function GetSessionQuestions()
 	qNum = 0
 	sessionQIDs = {}
 	
-	local sqlcmd = 'select * from Questions'
 	local firstCondition = true
-	local varList = composer.getVariable( "typeList" )
+	local udbAttached = false
+	local sqlcmd = 'select * from Questions'
+	-- Question Types
+	local varList = composer.getVariable( "askList" )
+	if varList ~= "" then
+		udbAttached = true
+		CloseUserDB()
+		local path = system.pathForFile("userdata.db", system.DocumentsDirectory)
+		local attachCmd = "ATTACH DATABASE '" .. path .. "' AS 'userdata'"
+		db:exec( attachCmd )
+		
+		if varList:find( '|NEW' ) ~= nil then
+			varList = varList:gsub( '|NEW', '|NULL' )
+			sqlcmd = sqlcmd .. ' LEFT OUTER JOIN Attempts ON Questions.QID = Attempts.qid'
+		else
+			sqlcmd = sqlcmd .. ' JOIN Attempts ON Questions.QID = Attempts.qid'
+		end
+		local conditionList = AddCondition( varList, {'Attempts.result'} ) 
+		if conditionList ~= "" then
+			if firstCondition then
+				firstCondition = false
+				sqlcmd = sqlcmd .. ' WHERE'
+			else
+				sqlcmd = sqlcmd .. ' AND'
+			end
+			sqlcmd = sqlcmd .. ' ( ' .. conditionList .. ' )'
+		end
+	end
+	-- Types
+	varList = composer.getVariable( "typeList" )
 	if  varList ~= "" then
 		if firstCondition then
 			firstCondition = false
@@ -62,6 +97,7 @@ function GetSessionQuestions()
 		end
 		sqlcmd = sqlcmd .. ' ( ' .. AddCondition( varList, {'Type1', 'Type2'} ) .. ' )'
 	end
+	-- Continents
 	varList = composer.getVariable( "continentList" )
 	if  varList ~= "" then
 		if firstCondition then
@@ -72,6 +108,7 @@ function GetSessionQuestions()
 		end
 		sqlcmd = sqlcmd ..  ' ( ' .. AddCondition( varList, {'Continent'} ) .. ' )'
 	end
+	--Countries
 	varList = composer.getVariable( "countryList" )
 	if  varList ~= "" then
 		if firstCondition then
@@ -83,19 +120,66 @@ function GetSessionQuestions()
 		sqlcmd = sqlcmd ..  ' ( ' .. AddCondition( varList, {'Country'} ) .. ' )'
 	end
 	sqlcmd = sqlcmd .. ' ORDER BY RANDOM()'
+	-- Number of Questions
 	sqlcmd = sqlcmd .. ' LIMIT ' .. tostring( composer.getVariable( "numQs" ) )
-	print( sqlcmd )
 	local dbInfo = GetQuizDBInfo( sqlcmd, 'QID' )
 	for i= 1, #dbInfo do
 		sessionQIDs[#sessionQIDs+1] = dbInfo[i]
 	end
-	PrintTable( sessionQIDs, 1, 2 )
+--~ 	print( sqlcmd )
+--~ 	PrintTable( sessionQIDs, 1, 2 )
+	
+	if udbAttached then
+		local detachCmd = "DETACH DATABASE 'userdata'"
+		db:exec( detachCmd )
+		OpenDatabases( false )
+	end
+end
 
---SELECT * FROM DBOne.dbo.Table1 AS t1 INNER JOIN DBTwo.dbo.Table2 t2 ON t2.ID = t1.ID
---SELECT Questions.qid FROM Questions JOIN Attempts ON Questions.QID = Attempts.qid WHERE Attempts.result = "MISSED" OR Attempts.result = "GUESSED"
+local function showAnswer( event, showMissed, showGuessed, showRight )
+	timer.cancel( timerHandle )
+	aText:setFillColor( 1,1,1,1 )
+	for i=1,rowCols do 
+		if keys[i] == 'Answer' then
+			aText.text = data[i]
+			break
+		end
+	end
+	answerButton.alpha = 0
+	answerButton:setEnabled( false )
+	
+	if showMissed == nil or showMissed == true then
+		wrongButton.alpha = 1.0
+		wrongButton:setEnabled( true )
+	end
+
+	if showGuessed == nil or showGuessed == true then
+		guessedButton.alpha = 1.0
+		guessedButton:setEnabled( true )
+	end
+	
+	if showRight == nil or showRight == true then
+		rightButton.alpha = 1.0
+		rightButton:setEnabled( true )
+	end
+end
+
+function TickDownTime( event )
+	timeLeft = timeLeft - 1
+	if timeLeft == 0 then
+		showAnswer( nil, true, false, false )
+	else
+		aText.text = tostring( timeLeft )
+		if timeLeft <= 5 then
+			aText:setFillColor( 1,0,0,1 )
+		end
+	end
 end
 
 function GetNextQuestion( lastResult )
+	-- reset the time
+	timeLeft = 15
+	
 	-- Write info about the attempt
 	if lastResult then
 		local newAttempt=[[INSERT INTO Attempts VALUES (NULL, ']]..userID..[[',']]..sessionID..[[',']].. sessionQIDs[qNum]..[[',']]..lastResult..[['); ]]
@@ -113,7 +197,8 @@ function GetNextQuestion( lastResult )
 				break
 			end
 		end
-		aText.text = '...'
+		aText.text = tostring( timeLeft )
+		timerHandle = timer.performWithDelay( 1000, TickDownTime, 15 )
 	else
 		GoToWelcome( nil )
 	end
@@ -130,24 +215,11 @@ local function nextQuestion( event )
 	guessedButton:setEnabled( false )
 	rightButton.alpha = 0
 	rightButton:setEnabled( false )
-	GetNextQuestion( event.target.id )
-end
-
-local function showAnswer()
-	for i=1,rowCols do 
-		if keys[i] == 'Answer' then
-			aText.text = data[i]
-			break
-		end
+	if event == nil then
+		GetNextQuestion( nil )
+	else
+		GetNextQuestion( event.target.id )
 	end
-	answerButton.alpha = 0
-	answerButton:setEnabled( false )
-	wrongButton.alpha = 1.0
-	wrongButton:setEnabled( true )
-	guessedButton.alpha = 1.0
-	guessedButton:setEnabled( true )
-	rightButton.alpha = 1.0
-	rightButton:setEnabled( true )
 end
 
 -- Composer API
@@ -168,7 +240,7 @@ function scene:create( event )
 		width = _W-10,
 		height = 0,
 		font = native.systemFont,
-		fontSize = 18,
+		fontSize = 24,
 		align = 'center',
 	} )
 	aText.anchorX = 0
@@ -298,7 +370,7 @@ function scene:show( event )
 		--print( sessionID )
 
 		GetSessionQuestions()
-		GetNextQuestion( nil )
+		nextQuestion( nil )
     elseif ( phase == "did" ) then
     end
 end
