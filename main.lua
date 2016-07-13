@@ -1,10 +1,10 @@
 composer = require( "composer" )
 
-composer.setVariable( "numQs", 25 )
+composer.setVariable( "numQs", 20 )
 
-composer.setVariable( "askAny", true )
-composer.setVariable( "askSel", false )
-composer.setVariable( "askList", "" )
+composer.setVariable( "askAny", false )
+composer.setVariable( "askSel", true )
+composer.setVariable( "askList", "|NEW" )
 
 composer.setVariable( "typeAny", true )
 composer.setVariable( "typeSel", false )
