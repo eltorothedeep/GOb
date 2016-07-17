@@ -1,6 +1,7 @@
 composer = require( "composer" )
 
 composer.setVariable( "numQs", 20 )
+composer.setVariable( "sessionScore", 0 )
 
 composer.setVariable( "askAny", false )
 composer.setVariable( "askSel", true )
@@ -18,6 +19,14 @@ composer.setVariable( "countryAny", true )
 composer.setVariable( "countrySel", false )
 composer.setVariable( "countryList", "" )
 
+--[[ 
+	
+	User Database version info
+	0 - Pre Attempt Time Left and Session Score
+	1 - Attempt Time Left and Session Score added
+	
+]]
+local userdata_version = 0
 
 centerX = display.contentCenterX
 centerY = display.contentCenterY
@@ -108,6 +117,28 @@ sessionID = 0
 userID = 0
 startTime = 0
 
+function saveRow(udata,cols,values,names)
+	if udata=='test_udata' then
+		keys = {}
+		data = {}
+		rowCols = cols
+		for i=1,rowCols do 
+			keys[i] = names[i]
+			data[i] = values[i]
+		end
+	elseif udata:find( 'fetch_col' ) then
+		local colName = udata:gsub( 'fetch_col|', '' )
+		for i=1,cols do 
+			if names[i] == colName then
+				tempData[#tempData+1] = values[i]	
+			end
+		end
+	elseif udata:find( 'user_version' ) then
+		userdata_version = values[1]
+	end
+	return 0
+end
+
 function SetupUserDB()
 	-- Open the user data database
 	local path = system.pathForFile("userdata.db", system.DocumentsDirectory)
@@ -135,6 +166,18 @@ function SetupUserDB()
 	for row in udb:nrows("SELECT * FROM Users WHERE username='Durga';") do
 		userID = row.id
 		--print( sessionID )
+	end
+	
+	local checkversion = [[PRAGMA user_version]]
+	udb:exec( checkversion, saveRow, 'user_version' ) 
+	if userdata_version == 0 then
+		print( 'Updating UserData Schema: Adding Score and TimeLeft' )
+		local updateschema = [[ALTER TABLE Sessions ADD COLUMN score INTEGER ]]
+		udb:exec( updateschema ) 
+		updateschema = [[ALTER TABLE Attempts ADD COLUMN timeleft INTEGER ]]
+		udb:exec( updateschema ) 
+		updateschema = [[PRAGMA user_version = 1]]
+		udb:exec( updateschema ) 
 	end
 end
 
@@ -184,26 +227,6 @@ end
 --display.setDefault( "anchorX", 0.0 )	-- default to TopLeft anchor point for new objects
 --display.setDefault( "anchorY", 0.0 )
 
-function saveRow(udata,cols,values,names)
-	if udata=='test_udata' then
-		keys = {}
-		data = {}
-		rowCols = cols
-		for i=1,rowCols do 
-			keys[i] = names[i]
-			data[i] = values[i]
-		end
-	elseif udata:find( 'fetch_col' ) then
-		local colName = udata:gsub( 'fetch_col|', '' )
-		for i=1,cols do 
-			if names[i] == colName then
-				tempData[#tempData+1] = values[i]	
-			end
-		end
-	end
-	return 0
-end
-
 function GetQuizDBInfo( sqlcmd, colname )
 	tempData = {}
 	db:exec(sqlcmd,saveRow,'fetch_col|'..colname)
@@ -232,7 +255,9 @@ function EndSession( doDBops, closeUDB )
 		local q = [[UPDATE Sessions SET endtime=']]..os.date( "%H:%M:%S" )..[[' WHERE id=']]..sessionID..[[';]]
 		udb:exec( q )
 		q = [[UPDATE Sessions SET length=']]..os.time()-startTime..[[' WHERE id=']]..sessionID..[[';]]
-		udb:exec( q )			
+		udb:exec( q )
+		q = [[UPDATE Sessions SET score=']]..composer.getVariable( "sessionScore" )..[[' WHERE id=']]..sessionID..[[';]]
+		udb:exec( q )
 	end
 	
 	if closeUDB then
@@ -304,6 +329,8 @@ local function onSystemEvent( event )
 				udb:exec( q )
 				q = [[UPDATE Sessions SET length=']]..os.time()-startTime..[[' WHERE id=']]..sessionID..[[';]]
 				udb:exec( q )			
+				q = [[UPDATE Sessions SET score=']]..composer.getVariable( "sessionScore" )..[[' WHERE id=']]..sessionID..[[';]]
+				udb:exec( q )				
 				sessionID = 0
 			end
 			udb:close()

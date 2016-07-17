@@ -11,10 +11,12 @@ local endButton
 local answerButton
 
 -- Data
+local maxTime = 20
 local qNum = 0
 local sessionQIDs = {}
-local timeLeft = 15
+local timeLeft = maxTime
 local timerhandle = nil
+local sessionScore = 0
 
 local function GoToWelcome( event )
 	timer.cancel ( timerHandle )
@@ -170,21 +172,38 @@ function TickDownTime( event )
 		showAnswer( nil, true, false, false )
 	else
 		aText.text = tostring( timeLeft )
-		if timeLeft <= 5 then
+		if timeLeft > maxTime-5 then
+			aText:setFillColor( 0,1,0,1 )
+		elseif timeLeft <= 5 then
 			aText:setFillColor( 1,0,0,1 )
+		else
+			aText:setFillColor( 1,1,1,1 )
 		end
 	end
 end
 
 function GetNextQuestion( lastResult )
-	-- reset the time
-	timeLeft = 15
-	
 	-- Write info about the attempt
 	if lastResult then
-		local newAttempt=[[INSERT INTO Attempts VALUES (NULL, ']]..userID..[[',']]..sessionID..[[',']].. sessionQIDs[qNum]..[[',']]..lastResult..[['); ]]
+		-- Calculate Score and add to sessionScore
+		scoreTime = math.min( timeLeft, 10 )
+		scoreValue = 0
+		if lastResult == 'CORRECT' then
+			scoreValue = 100
+		elseif lastResult == 'GUESSED' then
+			scoreValue = 50
+		end
+		sessionScore = sessionScore + scoreTime * scoreValue
+		composer.setVariable( "sessionScore", sessionScore )
+
+		local newAttempt=[[INSERT INTO Attempts VALUES (NULL, ']]..userID..[[',']]..sessionID..[[',']].. sessionQIDs[qNum]..[[',']]..lastResult..[[',']]..timeLeft..[['); ]]
 		udb:exec( newAttempt )
 	end
+	
+		-- reset the time
+	timeLeft = maxTime
+	aText:setFillColor( 0,1,0,1 )	
+	
 	-- Get next question of exit if session ended
 	qNum = qNum + 1
 	if qNum <= #sessionQIDs then
@@ -198,7 +217,7 @@ function GetNextQuestion( lastResult )
 			end
 		end
 		aText.text = tostring( timeLeft )
-		timerHandle = timer.performWithDelay( 1000, TickDownTime, 15 )
+		timerHandle = timer.performWithDelay( 1000, TickDownTime, maxTime )
 	else
 		GoToWelcome( nil )
 	end
@@ -359,18 +378,22 @@ function scene:show( event )
     local phase = event.phase
     
     if ( phase == "will" ) then
+		-- reset session score
+		sessionScore = 0
+		composer.setVariable( "sessionScore", sessionScore )
+		
 		OpenDatabases( false )
 
 		local date = os.date( "*t" )    -- returns table of date & time values
 		startTime = os.time()
-		local newSession=[[INSERT INTO Sessions VALUES (NULL, ']]..userID..[[',']]..os.date( "%m/%d/%Y" )..[[',']]..os.date( "%H:%M:%S" )..[[', NULL, NULL); ]]
+		local newSession=[[INSERT INTO Sessions VALUES (NULL, ']]..userID..[[',']]..os.date( "%m/%d/%Y" )..[[',']]..os.date( "%H:%M:%S" )..[[', NULL, NULL, 0); ]]
 		--print( newSession )
 		udb:exec( newSession )
 		sessionID = udb:last_insert_rowid()
 		--print( sessionID )
 
 		GetSessionQuestions()
-		nextQuestion( nil )
+		nextQuestion( nil )		
     elseif ( phase == "did" ) then
     end
 end
