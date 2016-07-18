@@ -134,6 +134,24 @@ function scene:show( event )
 				numAttempts = x
 			end
 			cumStatInfoValues[1].text = tostring( numAttempts)
+
+			local totalScore = 0
+			local totalMaxScore = 0
+			for x in udb:rows "SELECT * FROM Sessions;" do 
+				if x[7] ~= nil then
+					local numSessionAttempts = 0
+					for numA in udb:urows( "SELECT COUNT(*) FROM Attempts WHERE sessionid='"..x[1].."';" ) do  
+						numSessionAttempts = numA
+					end
+					if numSessionAttempts > 0 then
+						totalScore = totalScore + x[7]
+						totalMaxScore = totalMaxScore + ( numSessionAttempts * 1000 )
+						print( x[7], numSessionAttempts )
+					end
+				end
+			end
+			cumStatInfoValues[2].text = tostring( WholePercent( totalScore / totalMaxScore ) ) .. '%'
+			
 			--print( "Total Attempts: " .. numAttempts)
 			if numAttempts > 0 then
 				for i=3,#theme do 
@@ -166,6 +184,18 @@ function scene:show( event )
 					numAttempts = x
 				end
 				lastStatInfoValues[1].text =  tostring( numAttempts )
+				
+				local scorePercent = 0
+				if numAttempts > 0 then
+					for x in udb:urows([[SELECT score FROM Sessions WHERE id=]] .. lastSessionID .. [[ ;]]) do 
+						print( x, numAttempts )
+						scorePercent = WholePercent( x / ( numAttempts*1000 ) )
+					end
+				else
+					scorePercent = 0
+				end
+				lastStatInfoValues[2].text =  tostring( scorePercent ) .. '%'
+				
 				if numAttempts > 0 then
 					--print( "Last Session Attempts: " .. numAttempts)
 					lSpeedV.text = tostring( sessionLen/numAttempts )
