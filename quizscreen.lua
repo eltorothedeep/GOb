@@ -304,7 +304,7 @@ function scene:create( event )
 
 	wrongButton = widget.newButton
 	{
-		id = theme[2].id,
+		id = theme[3].id,
 		label = "Missed", 
 		emboss = false,
 		shape="roundedRect",
@@ -313,7 +313,7 @@ function scene:create( event )
 		cornerRadius = 10,
 		labelColor = { default={ 1, 1, 1, 1 }, over={ .1, 0.1, 0.1, 1 } },
 		fillColor = { default={ 1, 1, 1, 0.6 }, over={ 1, 1, 1, 0.6 } },
-		strokeColor = { default=theme[2].Color, over={ 0, 0, 0, 1 } },
+		strokeColor = { default=theme[3].Color, over={ 0, 0, 0, 1 } },
 		strokeWidth = 5,	
 		onRelease = nextQuestion
 	}
@@ -324,7 +324,7 @@ function scene:create( event )
 
 	guessedButton = widget.newButton
 	{
-		id = theme[3].id,
+		id = theme[4].id,
 		label = "Guessed", 
 		emboss = false,
 		shape="roundedRect",
@@ -334,7 +334,7 @@ function scene:create( event )
 		cornerRadius = 10,
 		labelColor = { default={ 1, 1, 1, 1 }, over={ .1, 0.1, 0.1, 1 } },
 		fillColor = { default={ 1, 1, 1, 0.6 }, over={ 1, 1, 1, 0.6 } },
-		strokeColor = { default=theme[3].Color, over={ 0, 0, 0, 1 } },
+		strokeColor = { default=theme[4].Color, over={ 0, 0, 0, 1 } },
 		strokeWidth = 5,	
 		onRelease = nextQuestion
 	}
@@ -345,7 +345,7 @@ function scene:create( event )
 
 	rightButton = widget.newButton
 	{
-		id = theme[4].id,
+		id = theme[5].id,
 		label = "Got It!", 
 		emboss = false,
 		shape="roundedRect",
@@ -355,7 +355,7 @@ function scene:create( event )
 		cornerRadius = 10,
 		labelColor = { default={ 1, 1, 1, 1 }, over={ .1, 0.1, 0.1, 1 } },
 		fillColor = { default={ 1, 1, 1, 0.6 }, over={ 1, 1, 1, 0.6 } },
-		strokeColor = { default=theme[4].Color, over={ 0, 0, 0, 1 } },
+		strokeColor = { default=theme[5].Color, over={ 0, 0, 0, 1 } },
 		strokeWidth = 5,	
 		onRelease = nextQuestion
 	}
