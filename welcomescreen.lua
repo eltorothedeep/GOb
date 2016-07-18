@@ -136,7 +136,7 @@ function scene:show( event )
 			cumStatInfoValues[1].text = tostring( numAttempts)
 			--print( "Total Attempts: " .. numAttempts)
 			if numAttempts > 0 then
-				for i=2,#theme do 
+				for i=3,#theme do 
 					local value					
 					for x in udb:urows( "SELECT COUNT(*) FROM Attempts WHERE result='" ..theme[i].id.."';") do 
 						value = x
@@ -171,7 +171,7 @@ function scene:show( event )
 					lSpeedV.text = tostring( sessionLen/numAttempts )
 					--print( "Second per Attempts: " .. sessionLen/numAttempts )
 					
-					for i=2,#theme do
+					for i=3,#theme do
 						local value
 						for x in udb:urows( "SELECT COUNT(*) FROM Attempts WHERE sessionid=" .. lastSessionID .. " AND result='" ..theme[i].id.."';" ) do 
 							value = x
