@@ -33,9 +33,7 @@ local function DrawGraph()
 		if graphType == 1 then
 			graphData[#graphData+1] = numAttempts
 		elseif graphType == 2 then
-			print( maxSessions-#graphData )
 			query = "SELECT * FROM Sessions WHERE id=" .. maxSessions-#graphData .. ";"
-			print( query )
 			for x in GetUserDB():rows(query) do 
 				-- For entries before the Score was added
 				if x[7] == nil then x[7] = 0 end
