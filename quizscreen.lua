@@ -221,7 +221,6 @@ function GetNextQuestion( lastResult )
 	else
 		GoToWelcome( nil )
 	end
-	--IncAndWriteIndex()
 end
 
 -- UI Responders

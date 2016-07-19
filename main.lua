@@ -146,6 +146,7 @@ end
 function SetupUserDB()
 	-- Open the user data database
 	local path = system.pathForFile("userdata.db", system.DocumentsDirectory)
+	print( path )
 	udb = sqlite3.open( path )
 	
 	-- Setup the user data database
@@ -174,7 +175,7 @@ function SetupUserDB()
 	
 	local checkversion = [[PRAGMA user_version]]
 	udb:exec( checkversion, saveRow, 'user_version' ) 
-	if userdata_version == 0 then
+	if tostring(userdata_version) == tostring( 0 ) then
 		print( 'Updating UserData Schema: Adding Score and TimeLeft' )
 		local updateschema = [[ALTER TABLE Sessions ADD COLUMN score INTEGER ]]
 		udb:exec( updateschema ) 
@@ -183,29 +184,6 @@ function SetupUserDB()
 		updateschema = [[PRAGMA user_version = 1]]
 		udb:exec( updateschema ) 
 	end
-end
-
-function GetLastIndex()
-	local filePath = system.pathForFile( 'lastIndex.txt', system.DocumentsDirectory )
-	if filePath then
-		file = io.open( filePath, "r" )
-		if file then
-			for line in file:lines() do
-				index = tonumber( line )
-				break
-			end
-			io.close( file )
-		end
-	end
-end
-
-function IncAndWriteIndex()
-	index = index + 1
-
-	local filePath = system.pathForFile( 'lastIndex.txt', system.DocumentsDirectory )
-	file = io.open( filePath, "w" )
-	file:write( tostring( index ) )
-	io.close( file ) 
 end
 
 function OpenDatabases( fullOpen )
@@ -308,7 +286,6 @@ end
 
 
 SetupUserDB()
-GetLastIndex()
 OpenDatabases( true )
 
 local options = 
@@ -339,12 +316,6 @@ local function onSystemEvent( event )
 			end
 			udb:close()
 		end
-
-		local filePath = system.pathForFile( 'lastIndex.txt', system.DocumentsDirectory )
-		file = io.open( filePath, "w" )
-		file:write( tostring( index ) )
-		io.close( file ) 
-
 	end
 end
 
