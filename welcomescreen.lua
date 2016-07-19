@@ -13,6 +13,8 @@ local lSpeedV = nil
 local lastStatInfoLabels = {}
 local lastStatInfoValues = {}
 local startButton = nil
+local scrollView = nil
+local scrollViewBackground = nil
 
 -- Local Variables
 local displayFontSize = 16
@@ -36,68 +38,91 @@ function scene:create( event )
 	
 	local nextTop 
 	header, nextTop = AddText( sceneGroup, "Geo Quiz", 24, 190/255, 190/255, 1, 1, _W/2.0, appOriginY, 0 );
+	
+	local switchOptions = 
+	{
+        onPress = onSwitchPress
+    }
+	local numSpots = 16
+	switchOptions.height = ( display.contentHeight - nextTop ) / numSpots
 
-	cumStats = display.newText( sceneGroup, "Cumulative Stats:", space, nextTop, native.systemFontBold, displayFontSize )
+	local scrollTop = nextTop --+ ( switchOptions.height * 3 * 2 ) - ( switchOptions.height / 2 )
+	local scrollHeight = appCanvasHeight - scrollTop - switchOptions.height
+	scrollView = widget.newScrollView
+	{
+		width = _W,
+		height = scrollHeight,
+		scrollWidth = _W,
+		scrollHeight = numSpots * switchOptions.height,
+		horizontalScrollDisabled = true
+	}
+	scrollView.x = display.contentCenterX
+	scrollView.y = scrollTop
+	scrollView.anchorY = 0
+	scrollViewBackground = display.newRect( 0, 0, _W, numSpots * switchOptions.height )
+	scrollViewBackground:setFillColor( 		{
+		type = 'gradient',
+		color1 = { 0, 0, 0, 1 }, 
+		color2 = { .1, .1, .1, 1 },
+		direction = "down"
+	} )
+	scrollViewBackground.anchorX = 0
+	scrollViewBackground.anchorY = 0
+	scrollView:insert( scrollViewBackground )
+	sceneGroup:insert( scrollView )
+	
+	cumStats, nextTop = AddText( scrollView, "Cumulative Stats:", displayFontSize,1,1,1,1, space, 10, 0 )
 	cumStats.anchorX = 0
 	cumStats.anchorY = 0
-	nextTop = nextTop + cumStats.height
-	display.newLine( sceneGroup, space, nextTop, cumStats.width*1.1, nextTop )
-
+	
+	local line1 = display.newLine( space, nextTop, cumStats.width*1.1, nextTop )
+	scrollView:insert( line1 )
 	nextTop = nextTop + space
+
 	for i=1,#theme do
-		cumStatInfoLabels[i] = display.newText( sceneGroup, theme[i].id..": ", space, nextTop, native.systemFontBold, displayFontSize )
+		local curTop = nextTop
+		cumStatInfoLabels[i], nextTop = AddText( scrollView, theme[i].id..": ", displayFontSize, theme[i].Color[1], theme[i].Color[2], theme[i].Color[3], theme[i].Color[4], space*3, nextTop, 5 )
 		cumStatInfoLabels[i].anchorX = 0
 		cumStatInfoLabels[i].anchorY = 0
-		cumStatInfoLabels[i]:setFillColor( theme[i].Color[1], theme[i].Color[2], theme[i].Color[3], theme[i].Color[4] )
 
-		cumStatInfoValues[i] = display.newText( sceneGroup, "", _W/2, nextTop, native.systemFontBold, displayFontSize )
+		cumStatInfoValues[i], nextTop = AddText( scrollView, "", displayFontSize, theme[i].Color[1], theme[i].Color[2], theme[i].Color[3], theme[i].Color[4], _W/2, curTop, 5 )
 		cumStatInfoValues[i].anchorX = 0
 		cumStatInfoValues[i].anchorY = 0
-		cumStatInfoValues[i]:setFillColor( theme[i].Color[1], theme[i].Color[2], theme[i].Color[3], theme[i].Color[4] )
-		
-		nextTop = nextTop + cumStatInfoValues[i].height + space
 	end
 
-	nextTop = nextTop + space
-	lastStats = display.newText( sceneGroup, "Last Session Stats:", space, nextTop, native.systemFontBold, displayFontSize )
+	nextTop = nextTop + space*2
+	lastStats, nextTop = AddText( scrollView, "Last Session Stats:", displayFontSize,1,1,1,1, space, nextTop, 0 )
 	lastStats.anchorX = 0
 	lastStats.anchorY = 0
-	nextTop = nextTop + lastStats.height
-	display.newLine( sceneGroup, space, nextTop, lastStats.width*1.1, nextTop )
-
+	local line2 = display.newLine( space, nextTop, lastStats.width*1.1, nextTop )
+	scrollView:insert( line2 )
 	nextTop = nextTop + space
-	lTimeL = display.newText( sceneGroup, "Total Time: ", space, nextTop, native.systemFontBold, displayFontSize )
-	lTimeV = display.newText( sceneGroup, "", _W/2, nextTop, native.systemFontBold, displayFontSize )
+
+	local curTop = nextTop
+	lTimeL, nextTop = AddText( scrollView, "Total Time: ", displayFontSize,1,1,1,1, space*3, nextTop, 5 )
 	lTimeL.anchorX = 0
 	lTimeL.anchorY = 0
+	lTimeV, nextTop = AddText( scrollView, "", displayFontSize,1,1,1,1, _W/2, curTop, 5 )
 	lTimeV.anchorX = 0
 	lTimeV.anchorY = 0
-	lTimeL:setFillColor( theme[1].Color[1], theme[1].Color[2], theme[1].Color[3], theme[1].Color[4])
-	lTimeV:setFillColor( theme[1].Color[1], theme[1].Color[2], theme[1].Color[3], theme[1].Color[4])
 
-	nextTop = nextTop + lTimeV.height + space
-	lSpeedL = display.newText( sceneGroup, "Time/Question: ", space, nextTop, native.systemFontBold, displayFontSize )
-	lSpeedV = display.newText( sceneGroup, "", _W/2, nextTop, native.systemFontBold, displayFontSize )
+	curTop = nextTop
+	lSpeedL, nextTop = AddText( scrollView, "Time/Question: ", displayFontSize,1,1,1,1, space*3, nextTop, 5 )
 	lSpeedL.anchorX = 0
 	lSpeedL.anchorY = 0
+	lSpeedV, nextTop = AddText( scrollView, "", displayFontSize,1,1,1,1, _W/2, curTop, 5 )
 	lSpeedV.anchorX = 0
 	lSpeedV.anchorY = 0
-	lSpeedL:setFillColor( theme[1].Color[1], theme[1].Color[2], theme[1].Color[3], theme[1].Color[4])
-	lSpeedV:setFillColor( theme[1].Color[1], theme[1].Color[2], theme[1].Color[3], theme[1].Color[4])
 
-	nextTop = nextTop + lSpeedL.height + space
 	for i=1,#theme do
-		lastStatInfoLabels[i] = display.newText( sceneGroup, theme[i].id..": ", space, nextTop, native.systemFontBold, displayFontSize )
+		local curTop = nextTop
+		lastStatInfoLabels[i], nextTop = AddText( scrollView, theme[i].id..": ", displayFontSize, theme[i].Color[1], theme[i].Color[2], theme[i].Color[3], theme[i].Color[4], space*3, nextTop, 5 )
 		lastStatInfoLabels[i].anchorX = 0
 		lastStatInfoLabels[i].anchorY = 0
-		lastStatInfoLabels[i]:setFillColor( theme[i].Color[1], theme[i].Color[2], theme[i].Color[3], theme[i].Color[4] )
 
-		lastStatInfoValues[i] = display.newText( sceneGroup, "", _W/2, nextTop, native.systemFontBold, displayFontSize )
+		lastStatInfoValues[i], nextTop = AddText( scrollView, "", displayFontSize, theme[i].Color[1], theme[i].Color[2], theme[i].Color[3], theme[i].Color[4], _W/2, curTop, 5 )
 		lastStatInfoValues[i].anchorX = 0
 		lastStatInfoValues[i].anchorY = 0
-		lastStatInfoValues[i]:setFillColor( theme[i].Color[1], theme[i].Color[2], theme[i].Color[3], theme[i].Color[4] )
-		
-		nextTop = nextTop + lastStatInfoValues[i].height + space
 	end
 	
 	startButton = widget.newButton
@@ -150,8 +175,12 @@ function scene:show( event )
 					end
 				end
 			end
-			cumStatInfoValues[2].text = tostring( WholePercent( totalScore / totalMaxScore ) ) .. '%'
 			
+			if totalMaxScore > 0 then
+				cumStatInfoValues[2].text = tostring( WholePercent( totalScore / totalMaxScore ) ) .. '%'
+			else
+				cumStatInfoValues[2].text = '0%'
+			end
 			--print( "Total Attempts: " .. numAttempts)
 			if numAttempts > 0 then
 				for i=3,#theme do 
@@ -241,6 +270,10 @@ function scene:destroy( event )
 		lastStatInfoLabels[i]:removeSelf()
 		lastStatInfoValues[i]:removeSelf()
 	end
+	
+	scrollViewBackground:removeSelf()
+	scrollView:removeSelf()
+
 end
 
 scene:addEventListener( "create", scene )
