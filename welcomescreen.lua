@@ -171,7 +171,7 @@ function scene:show( event )
 					if numSessionAttempts > 0 then
 						totalScore = totalScore + x[7]
 						totalMaxScore = totalMaxScore + ( numSessionAttempts * 1000 )
-						print( x[7], numSessionAttempts )
+						--print( x[7], numSessionAttempts )
 					end
 				end
 			end
@@ -217,13 +217,14 @@ function scene:show( event )
 				local scorePercent = 0
 				if numAttempts > 0 then
 					for x in udb:urows([[SELECT score FROM Sessions WHERE id=]] .. lastSessionID .. [[ ;]]) do 
-						print( x, numAttempts )
+						--print( x, numAttempts )
 						scorePercent = WholePercent( x / ( numAttempts*1000 ) )
+						lastStatInfoValues[2].text =  tostring( x ) .. '/' .. tostring( ( numAttempts*1000 ) ) .. ' ( ' .. scorePercent  .. '% )'
 					end
 				else
-					scorePercent = 0
+					lastStatInfoValues[2].text =  '0%'
 				end
-				lastStatInfoValues[2].text =  tostring( scorePercent ) .. '%'
+				
 				
 				if numAttempts > 0 then
 					--print( "Last Session Attempts: " .. numAttempts)
