@@ -9,6 +9,8 @@ local guessedButton
 local rightButton
 local endButton
 local answerButton
+local scoreText
+local qIndexText
 
 -- Data
 local maxTime = 20
@@ -195,6 +197,7 @@ function GetNextQuestion( lastResult )
 		end
 		sessionScore = sessionScore + scoreTime * scoreValue
 		composer.setVariable( "sessionScore", sessionScore )
+		scoreText.text = tostring( sessionScore ) .. '/' .. tostring( qNum * 1000 )
 
 		local newAttempt=[[INSERT INTO Attempts VALUES (NULL, ']]..userID..[[',']]..sessionID..[[',']].. sessionQIDs[qNum]..[[',']]..lastResult..[[',']]..timeLeft..[['); ]]
 		udb:exec( newAttempt )
@@ -202,10 +205,11 @@ function GetNextQuestion( lastResult )
 	
 		-- reset the time
 	timeLeft = maxTime
-	aText:setFillColor( 0,1,0,1 )	
+	aText:setFillColor( 0,1,0,1 )
 	
 	-- Get next question of exit if session ended
 	qNum = qNum + 1
+	qIndexText.text = 'Question ' .. qNum .. ' of ' .. #sessionQIDs
 	if qNum <= #sessionQIDs then
 		local sqlcmd = 'select * from Questions where QID = "' .. tostring( sessionQIDs[qNum] ) .. '"'
 		--print( sqlcmd )
@@ -246,8 +250,11 @@ function scene:create( event )
 	
 	local nextTop 
 	header, nextTop = AddText( sceneGroup, "Geo Quiz", 24, 190/255, 190/255, 1, 1, _W/2.0, appOriginY, 0 );
+	qIndexText = AddText( sceneGroup, "Question X of Y", 14, 190/255, 190/255, 1, 1, _W/4, 160, 0 );
+	scoreText = AddText( sceneGroup, "0", 14, 190/255, 190/255, 1, 1, _W*.75, 160, 0 );
 	qText = display.newText("", 5, 200, _W-10, 0, native.systemFont, 16)
 	qText.anchorX = 0
+	qText.anchorY = 0
 	qText:setFillColor(1,1,1)
 	sceneGroup:insert(qText)
 	aText = display.newText( {
@@ -416,7 +423,8 @@ function scene:destroy( event )
 	rightButton:removeSelf()
 	endButton:removeSelf()
 	answerButton:removeSelf()
-	
+	scoreText:removeSelf()
+	qIndexText:removeSelf()
 end
 
 scene:addEventListener( "create", scene )
