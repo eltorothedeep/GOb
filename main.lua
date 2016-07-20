@@ -146,7 +146,7 @@ end
 function SetupUserDB()
 	-- Open the user data database
 	local path = system.pathForFile("userdata.db", system.DocumentsDirectory)
-	print( path )
+	--print( path )
 	udb = sqlite3.open( path )
 	
 	-- Setup the user data database
